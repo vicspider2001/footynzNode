@@ -8,6 +8,7 @@ var MongoUrl = process.env.MongoOnline;
 // var MongoOnline = process.env.MongoOnline;
 var cors = require('cors')
 const bodyparser = require('body-parser');
+const res = require('express/lib/response');
 var port = process.env.PORT || 80;
 var db;
 
@@ -22,47 +23,53 @@ footynz.get('/',(req,res)=>{
     res.send("Welcome to footynz.server")
 })
 
-
-// // Use Port 5000
 // footynz.get('/getCategory', (req, res) => {
-//     const category = req.query.category;
 //     let query = {};
+    
+//     // Access the category from the URL query string
+//     const selectedCategory = req.query.category;
 
-//     // Logic: Only filter if a specific category is provided and it's NOT "All"
-//     if (category && category !== 'All') {
-//         query = { category: category }; // Exact match for "Men", "Women", etc.
+//     // Logic: If a category is selected and it's not "All", 
+//     // filter the database search.
+//     if (selectedCategory && selectedCategory !== 'All') {
+//         // IMPORTANT: The key must be 'category' to match your data
+//         query = { category: selectedCategory };
 //     }
 
-//     // else if (productId) {
-//     //     query = { id: productId };
-//     //     console.log("Fetching specific product ID:", productId);
-//     // }
+//     // 2. ELSE IF the frontend sends an ID (e.g., ?id=M-22401616A)
+//     // This is what you will use for your ProductDetails.jsx page later
+//     else if (productId) {
+//         query = { id: productId };
+//         console.log("Fetching specific product ID:", productId);
+//     }
 
-//     // Connect to your 'products' collection in 'footynzdata'
+//     // Connect to the 'products' collection
 //     db.collection('products').find(query).toArray((err, result) => {
 //         if (err) {
-//             console.error("Database Error:", err);
-//             return res.status(500).send(err);
+//             console.error("Error fetching from MongoDB:", err);
+//             return res.status(500).send("Database Error");
 //         }
-//         // Sends the array of documents back to React
+
+//         // Send the matching products back to Home.jsx
+//         console.log(`Found ${result.length} products for: ${selectedCategory || 'All'}`);
 //         res.send(result);
 //     });
 // });
 
-// Use Port 8888 (per your current setup)
+// Use Port 5000
 footynz.get('/getCategory', (req, res) => {
     const category = req.query.category;
     let query = {};
 
-    // 1. If a specific category like "Men" or "Kids" is picked:
+    // Logic: Only filter if a specific category is provided and it's NOT "All"
     if (category && category !== 'All') {
-        query = { category: category }; 
-    } 
-    // 2. If the user clicks "All" or the page first loads:
-    else {
-        // Only show items where isFeatured is true
-        query = { isFeatured: true }; 
+        query = { category: category }; // Exact match for "Men", "Women", etc.
     }
+
+    // else if (productId) {
+    //     query = { id: productId };
+    //     console.log("Fetching specific product ID:", productId);
+    // }
 
     // Connect to your 'products' collection in 'footynzdata'
     db.collection('products').find(query).toArray((err, result) => {
@@ -70,15 +77,10 @@ footynz.get('/getCategory', (req, res) => {
             console.error("Database Error:", err);
             return res.status(500).send(err);
         }
-        
-        // Debugging: See what is being sent to your frontend
-        console.log(`Sending ${result.length} products for category: ${category || 'Featured'}`);
-        
+        // Sends the array of documents back to React
         res.send(result);
     });
 });
-
-
 
 
 MongoClient.connect(MongoUrl, (err,client) => {
