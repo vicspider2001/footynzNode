@@ -22,48 +22,22 @@ footynz.get('/',(req,res)=>{
     res.send("Welcome to footynz.server")
 })
 
-
-// // Use Port 5000
-// footynz.get('/getCategory', (req, res) => {
-//     const category = req.query.category;
-//     let query = {};
-
-//     // Logic: Only filter if a specific category is provided and it's NOT "All"
-//     if (category && category !== 'All') {
-//         query = { category: category }; // Exact match for "Men", "Women", etc.
-//     }
-
-//     // else if (productId) {
-//     //     query = { id: productId };
-//     //     console.log("Fetching specific product ID:", productId);
-//     // }
-
-//     // Connect to your 'products' collection in 'footynzdata'
-//     db.collection('products').find(query).toArray((err, result) => {
-//         if (err) {
-//             console.error("Database Error:", err);
-//             return res.status(500).send(err);
-//         }
-//         // Sends the array of documents back to React
-//         res.send(result);
-//     });
-// });
-
-// Use Port 8888 (per your current setup)
-footynz.get('/getCategory', (req, res) => {
+    footynz.get('/getCategory', (req, res) => {
     const category = req.query.category;
+    const productId = req.query.id; // Corrected: Grab ID from query params
+
     let query = {};
 
-    // 1. If a specific category like "Men" or "Kids" is picked:
-    if (category && category !== 'All') {
-        query = { category: category }; 
-    } 
-    // 2. If the user clicks "All" or the page first loads:
-    else {
-        // Only show items where isFeatured is true
-        query = { isFeatured: true }; 
+    if (productId) {
+        // High priority: Fetch specific product for Detail Page
+        query = { id: productId };
+    } else if (category && category !== 'All') {
+        // Medium priority: Fetch products by category (Men, Sports, etc.)
+        query = { category: category };
+    } else {
+        // Default: Homepage view showing featured items
+        query = { isFeatured: true };
     }
-
     // Connect to your 'products' collection in 'footynzdata'
     db.collection('products').find(query).toArray((err, result) => {
         if (err) {
@@ -77,8 +51,6 @@ footynz.get('/getCategory', (req, res) => {
         res.send(result);
     });
 });
-
-
 
 
 MongoClient.connect(MongoUrl, (err,client) => {
