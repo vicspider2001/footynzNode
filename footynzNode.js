@@ -3,64 +3,74 @@ var footynz = express();
 var dotenv = require('dotenv');
 var mongo = require('mongodb');
 var MongoClient = mongo.MongoClient;
-dotenv.config();
-var MongoUrl = process.env.MongoOnline;
-// var MongoOnline = process.env.MongoOnline;
-var cors = require('cors')
+var cors = require('cors');
 const bodyparser = require('body-parser');
+
+dotenv.config();
+
+var MongoUrl = process.env.MongoOnline;
 var port = process.env.PORT || 80;
 var db;
 
-
-footynz.use(bodyparser.urlencoded({extended:true}));
+// Middleware configuration
+footynz.use(bodyparser.urlencoded({ extended: true }));
 footynz.use(bodyparser.json());
 footynz.use(cors());
-footynz.use(express());
+// REMOVED: footynz.use(express()); <-- This was breaking the app
 
-// Assuming 'db' is your connected MongoDB database instance
-footynz.get('/',(req,res)=>{
-    res.send("Welcome to footynz.server")
-})
+// Routes
+footynz.get('/', (req, res) => {
+    res.send("Welcome to footynz.server");
+});
 
-    footynz.get('/getCategory', (req, res) => {
+footynz.get('/getCategory', (req, res) => {
     const category = req.query.category;
-    const productId = req.query.id; // Corrected: Grab ID from query params
+    const productId = req.query.id;
 
     let query = {};
 
     if (productId) {
-        // High priority: Fetch specific product for Detail Page
         query = { id: productId };
     } else if (category && category !== 'All') {
-        // Medium priority: Fetch products by category (Men, Sports, etc.)
         query = { category: category };
     } else {
-        // Default: Homepage view showing featured items
         query = { isFeatured: true };
     }
-    // Connect to your 'products' collection in 'footynzdata'
+
+    // Safety check to ensure DB is connected before querying
+    if (!db) {
+        return res.status(500).send("Database connection is not established yet.");
+    }
+
     db.collection('products').find(query).toArray((err, result) => {
         if (err) {
             console.error("Database Error:", err);
             return res.status(500).send(err);
         }
-        
-        // Debugging: See what is being sent to your frontend
-        console.log(`Sending ${result.length} products for category: ${category || 'Featured'}`);
-        
+        console.log(`Sending ${result ? result.length : 0} products for category: ${category || 'Featured'}`);
         res.send(result);
     });
 });
 
+// Robust MongoDB Connection handling
+if (!MongoUrl) {
+    console.error("FATAL ERROR: MongoOnline is not defined in your environment variables.");
+    process.exit(1);
+}
 
-MongoClient.connect(MongoUrl, (err,client) => {
-    if(err) console.log("error while connecting");
+MongoClient.connect(MongoUrl, { useUnifiedTopology: true }, (err, client) => {
+    if (err) {
+        console.error("Database connection failed! Server will not start.");
+        console.error(err);
+        process.exit(1); // Stop the process so you can see the error logs clearly
+    }
+    
+    // Successfully connected
     db = client.db('footynzdata');
-    footynz.listen(port, '0.0.0.0',()=>{
-        console.log(`listening on port ${port}`)
-    })
-})
+    console.log("Connected successfully to MongoDB.");
 
-
-
-
+    // Start the server ONLY after the database is ready
+    footynz.listen(port, '0.0.0.0', () => {
+        console.log(`Server is up and listening on port ${port}`);
+    });
+});
