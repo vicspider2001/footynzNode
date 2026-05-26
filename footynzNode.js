@@ -9,7 +9,7 @@ const bodyparser = require('body-parser');
 dotenv.config();
 
 var MongoUrl = process.env.MongoOnline;
-var port = process.env.PORT || 80;
+var port = process.env.PORT;
 var db;
 
 // Middleware configuration
